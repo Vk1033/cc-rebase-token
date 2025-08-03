@@ -36,6 +36,17 @@ contract RebaseToken is ERC20 {
     }
 
     /**
+     * @notice Get the principle balance of a user.
+     * @param _user The address of the user to check the balance for.
+     * @return The principal balance of the user without accrued interest.
+     * @dev This function returns the balance of the user without considering any accrued interest.
+     */
+    function principleBalanceOf(address _user) external view returns (uint256) {
+        // Returns the principal balance of the user without accrued interest
+        return super.balanceOf(_user);
+    }
+
+    /**
      * @notice Mint new tokens to a specified address.
      * @param _to The address to mint tokens to.
      * @param _amount The amount of tokens to mint.
@@ -45,6 +56,20 @@ contract RebaseToken is ERC20 {
         _mintAccruedInterest(_to);
         s_userInterestRate[_to] = s_interestRate;
         _mint(_to, _amount);
+    }
+
+    /**
+     * @notice Burn tokens from a specified address.
+     * @param _from The address to burn tokens from.
+     * @param _amount The amount of tokens to burn.
+     * @dev This function burns tokens and updates the user's accrued interest.
+     */
+    function burn(address _from, uint256 _amount) external {
+        if (_amount == type(uint256).max) {
+            _amount = balanceOf(_from);
+        }
+        _mintAccruedInterest(_from);
+        _burn(_from, _amount);
     }
 
     /**
@@ -60,6 +85,45 @@ contract RebaseToken is ERC20 {
     }
 
     /**
+     * @notice Transfer tokens to a recipient, updating accrued interest for both sender and recipient.
+     * @param _recipent The address of the recipient.
+     * @param _amount The amount of tokens to transfer.
+     * @return True if the transfer was successful.
+     * @dev This function overrides the transfer function to ensure that accrued interest is updated for both the sender and recipient.
+     */
+    function transfer(address _recipent, uint256 _amount) public override returns (bool) {
+        _mintAccruedInterest(msg.sender);
+        _mintAccruedInterest(_recipent);
+        if (_amount == type(uint256).max) {
+            _amount = balanceOf(msg.sender);
+        }
+        if (balanceOf(_recipent) == 0) {
+            s_userInterestRate[_recipent] = s_userInterestRate[msg.sender];
+        }
+        return super.transfer(_recipent, _amount);
+    }
+
+    /**
+     * @notice Transfer tokens from one address to another, updating accrued interest for both sender and recipient.
+     * @param _sender The address of the sender.
+     * @param _recipient The address of the recipient.
+     * @param _amount The amount of tokens to transfer.
+     * @return True if the transfer was successful.
+     * @dev This function overrides the transferFrom function to ensure that accrued interest is updated for both the sender and recipient.
+     */
+    function transferFrom(address _sender, address _recipient, uint256 _amount) public override returns (bool) {
+        _mintAccruedInterest(_sender);
+        _mintAccruedInterest(_recipient);
+        if (_amount == type(uint256).max) {
+            _amount = balanceOf(_sender);
+        }
+        if (balanceOf(_recipient) == 0) {
+            s_userInterestRate[_recipient] = s_userInterestRate[_sender];
+        }
+        return super.transferFrom(_sender, _recipient, _amount);
+    }
+
+    /**
      * @notice Calculate the accrued interest for a user since their last update.
      * @param _user The address of the user to calculate interest for.
      * @return linearInterest The amount of interest accrued since the last update.
@@ -70,11 +134,37 @@ contract RebaseToken is ERC20 {
         linearInterest = PRECISION_FACTOR + (s_userInterestRate[_user] * timeElapsed);
     }
 
-    function getUserInterestRate(address user) external view returns (uint256) {
-        return s_userInterestRate[user];
+    /**
+     * @notice Mint accrued interest for a user.
+     * @param _user The address of the user to mint interest for.
+     * @dev This function mints the accrued interest for the user based on their last updated timestamp and current balance.
+     */
+    function _mintAccruedInterest(address _user) internal {
+        uint256 previousPrincipalBalance = super.balanceOf(_user);
+        uint256 currentBalance = balanceOf(_user);
+        uint256 balanceIncrease = currentBalance - previousPrincipalBalance;
+
+        s_userlastUpdatedTimestamp[_user] = block.timestamp;
+
+        _mint(_user, balanceIncrease);
     }
 
-    function _mintAccruedInterest(address _user) internal {
-        s_userlastUpdatedTimestamp[_user] = block.timestamp;
+    /**
+     * @notice Get the current interest rate for the rebase token.
+     * @return The current interest rate.
+     * @dev This function returns the current interest rate for the rebase token.
+     */
+    function getInterestRate() external view returns (uint256) {
+        return s_interestRate;
+    }
+
+    /**
+     * @notice Get the interest rate for a specific user.
+     * @param _user The address of the user to check the interest rate for.
+     * @return The interest rate for the specified user.
+     * @dev This function returns the interest rate for a specific user, which may differ from the global interest rate.
+     */
+    function getUserInterestRate(address _user) external view returns (uint256) {
+        return s_userInterestRate[_user];
     }
 }
