@@ -15,7 +15,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
 
     uint256 private constant PRECISION_FACTOR = 1e18; // Precision factor for interest calculations
     bytes32 private constant MINT_AND_BURN_ROLE = keccak256("MINT_AND_BURN_ROLE"); // Role for minting and burning tokens
-    uint256 private s_interestRate = 5e10; // Interest rate for the rebase token
+    uint256 private s_interestRate = (5 * PRECISION_FACTOR) / 1e8; // Interest rate for the rebase token
     mapping(address => uint256) private s_userInterestRate;
     mapping(address => uint256) private s_userlastUpdatedTimestamp;
 
@@ -35,7 +35,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      */
     function setInterestRate(uint256 _newInterestRate) external onlyOwner {
         // Logic to set the new interest rate
-        if (_newInterestRate > s_interestRate) {
+        if (_newInterestRate >= s_interestRate) {
             revert Rebase__InterestCanOnlyDecrease(s_interestRate, _newInterestRate);
         }
         s_interestRate = _newInterestRate;
@@ -73,9 +73,6 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      * @dev This function burns tokens and updates the user's accrued interest.
      */
     function burn(address _from, uint256 _amount) external onlyRole(MINT_AND_BURN_ROLE) {
-        if (_amount == type(uint256).max) {
-            _amount = balanceOf(_from);
-        }
         _mintAccruedInterest(_from);
         _burn(_from, _amount);
     }
@@ -89,7 +86,7 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      */
     function balanceOf(address _user) public view override returns (uint256) {
         // Calculate the balance considering accrued interest
-        return super.balanceOf(_user) + _calculateAccruedInterestSinceLastUpdate(_user) / PRECISION_FACTOR;
+        return (super.balanceOf(_user) * _calculateAccruedInterestSinceLastUpdate(_user)) / PRECISION_FACTOR;
     }
 
     /**
@@ -152,9 +149,9 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
         uint256 currentBalance = balanceOf(_user);
         uint256 balanceIncrease = currentBalance - previousPrincipalBalance;
 
-        s_userlastUpdatedTimestamp[_user] = block.timestamp;
-
         _mint(_user, balanceIncrease);
+
+        s_userlastUpdatedTimestamp[_user] = block.timestamp;
     }
 
     /**
@@ -174,5 +171,14 @@ contract RebaseToken is ERC20, Ownable, AccessControl {
      */
     function getUserInterestRate(address _user) external view returns (uint256) {
         return s_userInterestRate[_user];
+    }
+
+    /**
+     * @notice Get the role used for minting and burning tokens.
+     * @return The bytes32 representation of the mint and burn role.
+     * @dev This function allows external contracts to retrieve the mint and burn role for access control purposes.
+     */
+    function getMintAndBurnRole() external pure returns (bytes32) {
+        return MINT_AND_BURN_ROLE;
     }
 }

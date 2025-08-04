@@ -33,6 +33,9 @@ contract Vault {
      * @dev This function allows users to redeem their rebase tokens for Ether.
      */
     function redeem(uint256 _amount) external {
+        if (_amount == type(uint256).max) {
+            _amount = i_rebaseToken.balanceOf(msg.sender);
+        }
         i_rebaseToken.burn(msg.sender, _amount);
         (bool success,) = payable(msg.sender).call{value: _amount}(""); // Transfer the Ether back to the user
         if (!success) {
