@@ -156,7 +156,7 @@ contract RebaseTokenTest is Test {
     function testCannotCallMintAndBurnFunctions() public {
         vm.startPrank(user);
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
-        rebaseToken.mint(user, 100, );
+        rebaseToken.mint(user, 100, rebaseToken.getInterestRate());
         vm.expectPartialRevert(IAccessControl.AccessControlUnauthorizedAccount.selector);
         rebaseToken.burn(user, 100);
         vm.stopPrank();
@@ -202,7 +202,7 @@ contract RebaseTokenTest is Test {
         );
 
         vm.startPrank(newAccount);
-        rebaseToken.mint(newAccount, 100);
+        rebaseToken.mint(newAccount, 100, rebaseToken.getInterestRate());
         assertEq(rebaseToken.balanceOf(newAccount), 100, "New account should have 100 tokens after minting");
 
         rebaseToken.burn(newAccount, 100);

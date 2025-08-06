@@ -1,4 +1,4 @@
-// SPDX=License-Identifier: MIT
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.24;
 
@@ -9,7 +9,7 @@ import {Pool} from "@ccip/contracts/src/v0.8/ccip/libraries/Pool.sol"; // For CC
 
 contract RebaseTokenPool is TokenPool {
     constructor(IERC20 _token, address[] memory _allowlist, address _rnmProxy, address _router)
-        TokenPool(_token, 18, _allowlist, _rnmProxy, _router)
+        TokenPool(_token, _allowlist, _rnmProxy, _router)
     {}
 
     function lockOrBurn(Pool.LockOrBurnInV1 calldata lockOrBurnIn)
