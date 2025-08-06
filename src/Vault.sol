@@ -23,7 +23,8 @@ contract Vault {
      * @dev This function allows users to deposit Ether, which will be converted to rebase tokens.
      */
     function deposit() external payable {
-        i_rebaseToken.mint(msg.sender, msg.value);
+        uint256 userInterestRate = i_rebaseToken.getInterestRate();
+        i_rebaseToken.mint(msg.sender, msg.value, userInterestRate);
         emit Deposit(msg.sender, msg.value);
     }
 
