@@ -89,7 +89,7 @@ cast send ${ZKSYNC_POOL_ADDRESS}  --rpc-url ${ZKSYNC_SEPOLIA_RPC_URL} --account 
 echo "Bridging the funds using the script to ZKsync..."
 SEPOLIA_BALANCE_BEFORE=$(cast balance $(cast wallet address --account myaccount) --erc20 ${SEPOLIA_REBASE_TOKEN_ADDRESS} --rpc-url ${ETHEREUM_SEPOLIA_RPC_URL})
 echo "Sepolia balance before bridging: $SEPOLIA_BALANCE_BEFORE"
-forge script ./script/BridgeTokens.s.sol:BridgeTokensScript --rpc-url ${ETHEREUM_SEPOLIA_RPC_URL} --account myaccount --broadcast --sig "sendMessage(address,uint64,address,uint256,address,address)" $(cast wallet address --account myaccount) ${ZKSYNC_SEPOLIA_CHAIN_SELECTOR} ${SEPOLIA_REBASE_TOKEN_ADDRESS} ${AMOUNT} ${SEPOLIA_LINK_ADDRESS} ${SEPOLIA_ROUTER}
+forge script ./script/BridgeTokens.s.sol:BridgeTokensScript --rpc-url ${ETHEREUM_SEPOLIA_RPC_URL} --account myaccount --broadcast --sig "run(address,uint64,address,uint256,address,address)" $(cast wallet address --account myaccount) ${ZKSYNC_SEPOLIA_CHAIN_SELECTOR} ${SEPOLIA_REBASE_TOKEN_ADDRESS} ${AMOUNT} ${SEPOLIA_LINK_ADDRESS} ${SEPOLIA_ROUTER}
 echo "Funds bridged to ZKsync"
 SEPOLIA_BALANCE_AFTER=$(cast balance $(cast wallet address --account myaccount) --erc20 ${SEPOLIA_REBASE_TOKEN_ADDRESS} --rpc-url ${ETHEREUM_SEPOLIA_RPC_URL})
 echo "Sepolia balance after bridging: $SEPOLIA_BALANCE_AFTER"

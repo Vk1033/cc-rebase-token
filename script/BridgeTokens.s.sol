@@ -15,6 +15,13 @@ contract BridgeTokensScript is Script {
         address linkTokenAddress,
         address routerAddress
     ) public {
+        // struct EVM2AnyMessage {
+        //     bytes receiver; // abi.encode(receiver address) for dest EVM chains
+        //     bytes data; // Data payload
+        //     EVMTokenAmount[] tokenAmounts; // Token transfers
+        //     address feeToken; // Address of feeToken. address(0) means you will send msg.value.
+        //     bytes extraArgs; // Populate this with _argsToBytes(EVMExtraArgsV2)
+        // }
         Client.EVMTokenAmount[] memory tokenAmounts = new Client.EVMTokenAmount[](1);
         tokenAmounts[0] = Client.EVMTokenAmount({token: tokenToSendAddress, amount: amountToSend});
         vm.startBroadcast();
