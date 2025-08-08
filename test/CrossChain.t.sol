@@ -49,6 +49,7 @@ contract CrossChainTest is Test {
         sepoliaToken = new RebaseToken();
 
         vault = new Vault(IRebaseToken(address(sepoliaToken)));
+        vm.deal(address(vault), 1e18);
         sepoliaPool = new RebaseTokenPool(
             IERC20(address(sepoliaToken)),
             new address[](0), // Allowlist can be empty for testing
@@ -67,8 +68,8 @@ contract CrossChainTest is Test {
         vm.stopPrank();
 
         vm.selectFork(arbSepoliaFork);
-        arbSepoliaNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(block.chainid);
         vm.startPrank(owner);
+        arbSepoliaNetworkDetails = ccipLocalSimulatorFork.getNetworkDetails(block.chainid);
         arbSepoliaToken = new RebaseToken();
         arbSepoliaPool = new RebaseTokenPool(
             IERC20(address(arbSepoliaToken)),
@@ -134,6 +135,14 @@ contract CrossChainTest is Test {
         RebaseToken remoteToken
     ) public {
         vm.selectFork(localFork);
+        vm.startPrank(user);
+        // struct EVM2AnyMessage {
+        //     bytes receiver; // abi.encode(receiver address) for dest EVM chains
+        //     bytes data; // Data payload
+        //     EVMTokenAmount[] tokenAmounts; // Token transfers
+        //     address feeToken; // Address of feeToken. address(0) means you will send msg.value.
+        //     bytes extraArgs; // Populate this with _argsToBytes(EVMExtraArgsV2)
+        // }
         Client.EVMTokenAmount[] memory tokenAmounts = new Client.EVMTokenAmount[](1);
         tokenAmounts[0] = Client.EVMTokenAmount({token: address(localToken), amount: amountToBridge});
         Client.EVM2AnyMessage memory message = Client.EVM2AnyMessage({
@@ -141,8 +150,12 @@ contract CrossChainTest is Test {
             data: "",
             tokenAmounts: tokenAmounts,
             feeToken: localNetworkDetails.linkAddress,
-            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV2({gasLimit: 100000, allowOutOfOrderExecution: false}))
+            extraArgs: Client._argsToBytes(
+                Client.EVMExtraArgsV1({gasLimit: 300_000}) // gasLimit: 0 may cause issues with simulator
+            )
         });
+        vm.stopPrank();
+
         uint256 fee =
             IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message);
         ccipLocalSimulatorFork.requestLinkFromFaucet(user, fee);
@@ -154,26 +167,19 @@ contract CrossChainTest is Test {
         vm.prank(user);
         IRouterClient(localNetworkDetails.routerAddress).ccipSend(remoteNetworkDetails.chainSelector, message);
         uint256 localBalanceAfter = localToken.balanceOf(user);
-        assertEq(
-            localBalanceAfter, localBalanceBefore - amountToBridge, "Local balance should decrease by bridged amount"
-        );
+        assertEq(localBalanceAfter, localBalanceBefore - amountToBridge);
         uint256 localUserInterestRate = localToken.getUserInterestRate(user);
 
         vm.selectFork(remoteFork);
         vm.warp(block.timestamp + 20 minutes);
-
         uint256 remoteBalanceBefore = remoteToken.balanceOf(user);
+
+        vm.selectFork(localFork);
         ccipLocalSimulatorFork.switchChainAndRouteMessage(remoteFork);
         uint256 remoteBalanceAfter = remoteToken.balanceOf(user);
-        assertEq(
-            remoteBalanceAfter, remoteBalanceBefore + amountToBridge, "Remote balance should increase by bridged amount"
-        );
+        assertEq(remoteBalanceAfter, remoteBalanceBefore + amountToBridge);
         uint256 remoteUserInterestRate = remoteToken.getUserInterestRate(user);
-        assertEq(
-            remoteUserInterestRate,
-            localUserInterestRate,
-            "Remote user interest rate should match local user interest rate"
-        );
+        assertEq(remoteUserInterestRate, localUserInterestRate);
     }
 
     function testBridgeAllTokens() public {
