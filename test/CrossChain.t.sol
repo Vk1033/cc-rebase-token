@@ -57,7 +57,7 @@ contract CrossChainTest is Test {
         );
         sepoliaToken.grantMintAndBurnRole(address(sepoliaPool));
         sepoliaToken.grantMintAndBurnRole(address(vault));
-        RegistryModuleOwnerCustom(sepoliaNetworkDetails.tokenAdminRegistryAddress).registerAdminViaOwner(
+        RegistryModuleOwnerCustom(sepoliaNetworkDetails.registryModuleOwnerCustomAddress).registerAdminViaOwner(
             address(sepoliaToken)
         );
         TokenAdminRegistry(sepoliaNetworkDetails.tokenAdminRegistryAddress).acceptAdminRole(address(sepoliaToken));
@@ -78,7 +78,7 @@ contract CrossChainTest is Test {
         );
         arbSepoliaToken.grantMintAndBurnRole(address(arbSepoliaPool));
 
-        RegistryModuleOwnerCustom(arbSepoliaNetworkDetails.tokenAdminRegistryAddress).registerAdminViaOwner(
+        RegistryModuleOwnerCustom(arbSepoliaNetworkDetails.registryModuleOwnerCustomAddress).registerAdminViaOwner(
             address(arbSepoliaToken)
         );
         TokenAdminRegistry(arbSepoliaNetworkDetails.tokenAdminRegistryAddress).acceptAdminRole(address(arbSepoliaToken));
@@ -141,7 +141,7 @@ contract CrossChainTest is Test {
             data: "",
             tokenAmounts: tokenAmounts,
             feeToken: localNetworkDetails.linkAddress,
-            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV2({gasLimit: 5000000, allowOutOfOrderExecution: false}))
+            extraArgs: Client._argsToBytes(Client.EVMExtraArgsV2({gasLimit: 100000, allowOutOfOrderExecution: false}))
         });
         uint256 fee =
             IRouterClient(localNetworkDetails.routerAddress).getFee(remoteNetworkDetails.chainSelector, message);
